@@ -26,8 +26,8 @@ defmodule EctoCassandra.Mixfile do
   ]
 
   defp deps, do: [
-    {:ecto, "~> 2.1.0"},
-    {:cassandra, "~> 1.0.2"},
+    {:ecto_sql, "~> 3.0"},
+    {:cassandra, github: "jacktday/elixir-cassandra"},
     {:excoveralls, "~> 0.6", only: :test},
     {:ex_doc, "~> 0.18.0", only: :dev},
     {:lz4, github: "szktty/erlang-lz4", branch: "develop", override: true}, # TODO check if fixed remove

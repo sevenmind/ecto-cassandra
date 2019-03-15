@@ -187,17 +187,9 @@ defmodule EctoCassandra.Adapter do
       result: log_result(result),
       params: Map.get(query, :values, []),
       query: String.Chars.to_string(cql),
-      ansi_color: cql_color(cql),
     })
   end
 
   defp log_result({:ok, _query, res}), do: {:ok, res}
   defp log_result(other), do: other
-
-  defp cql_color("SELECT" <> _), do: :cyan
-  defp cql_color("INSERT" <> _), do: :green
-  defp cql_color("UPDATE" <> _), do: :yellow
-  defp cql_color("DELETE" <> _), do: :red
-  defp cql_color("TRUNC" <> _), do: :red
-  defp cql_color(_), do: nil
 end
