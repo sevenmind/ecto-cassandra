@@ -30,7 +30,7 @@ defmodule EctoCassandra.Mixfile do
     {:cassandra, "~> 1.0.2"},
     {:excoveralls, "~> 0.6", only: :test},
     {:ex_doc, "~> 0.18.0", only: :dev},
-    {:lz4, github: "szktty/erlang-lz4", override: true}, # TODO check if fixed remove
+    {:lz4, github: "szktty/erlang-lz4", branch: "develop", override: true}, # TODO check if fixed remove
   ]
 
   defp package, do: [
