@@ -1,8 +1,25 @@
 defmodule EctoCassandra.Adapter.Base do
   @moduledoc false
 
-  defmacro __using__(_) do
+  defmacro __using__(opts \\ []) do
     quote do
+      @behaviour Ecto.Adapter
+      @behaviour Ecto.Adapter.Migration
+      @behaviour Ecto.Adapter.Queryable
+      @behaviour Ecto.Adapter.Schema
+      @behaviour Ecto.Adapter.Transaction
+
+      opts = unquote(opts)
+      @conn __MODULE__.Cassandra
+
+      # def init(config) do
+      #   repo = Keyword.get(config, :repo)
+
+      #   # conn = Module.concat(repo, Cassandra)
+
+      #   repo.init(config) |> IO.inspect()
+      # end
+
       def prepare(type, query) do
         cql = apply(EctoCassandra, type, [query])
         # {:cache, {:erlang.phash2(query), type, cql}}

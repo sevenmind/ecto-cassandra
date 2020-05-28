@@ -81,3 +81,9 @@ defmodule Sample.App do
 end
 ```
 
+
+
+### Ecto V3 Compatbility
+
+Known issues
+ - Adapter Init not 

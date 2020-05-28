@@ -1,11 +1,7 @@
 import Config
 require Logger
 
-# config :micro_segmentation,
-#   ecto_repos: [MicroSegmentation.Repo]
-
-Logger.info("Loading mix config for #{Mix.env()}")
-
-if File.exists?("#{Mix.env()}.exs") do
+if File.exists?("config/#{Mix.env()}.exs") do
+  Logger.info("Loading mix config for #{Mix.env()}")
   import_config "#{Mix.env()}.exs"
 end

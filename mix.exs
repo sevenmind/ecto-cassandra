@@ -8,6 +8,7 @@ defmodule EctoCassandra.Mixfile do
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -47,4 +48,7 @@ defmodule EctoCassandra.Mixfile do
       },
       files: ~w(mix.exs lib README.md LICENSE.md)
     ]
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end
