@@ -1,5 +1,4 @@
 defmodule EctoCassandra.Query do
-
   @types [
     :ascii,
     :bigint,
@@ -20,13 +19,13 @@ defmodule EctoCassandra.Query do
     :tinyint,
     :uuid,
     :varchar,
-    :varint,
+    :varint
   ]
 
   @cassandra_keys [
     :if,
     :allow_filtering,
-    :using,
+    :using
   ]
 
   defmacro __using__([]) do
@@ -39,6 +38,7 @@ defmodule EctoCassandra.Query do
   defmacro from(expr, kw \\ []) do
     cassandra_kw = Keyword.take(kw, @cassandra_keys)
     ecto_kw = Keyword.drop(kw, @cassandra_keys)
+
     quote do
       unquote(expr)
       |> Ecto.Query.from(unquote(ecto_kw))

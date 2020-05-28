@@ -22,8 +22,8 @@ defmodule EctoCassandra.Adapter do
 
     case exec_and_log(repo, cql, options) do
       %CQL.Result.SchemaChange{} -> :ok
-      %CQL.Result.Void{}         -> :ok
-      error                      -> raise error
+      %CQL.Result.Void{} -> :ok
+      error -> raise error
     end
   end
 
@@ -39,13 +39,15 @@ defmodule EctoCassandra.Adapter do
     cql =
       options
       |> Keyword.put(:if_not_exists, true)
-      |> EctoCassandra.create_keyspace
+      |> EctoCassandra.create_keyspace()
 
     case run_query(cql, options) do
       %CQL.Result.SchemaChange{change_type: "CREATED", target: "KEYSPACE"} ->
         :ok
+
       %CQL.Result.Void{} ->
         {:error, :already_up}
+
       error ->
         {:error, Exception.message(error)}
     end
@@ -58,13 +60,15 @@ defmodule EctoCassandra.Adapter do
     cql =
       options
       |> Keyword.put(:if_exists, true)
-      |> EctoCassandra.drop_keyspace
+      |> EctoCassandra.drop_keyspace()
 
     case run_query(cql, options) do
       %CQL.Result.SchemaChange{change_type: "DROPPED", target: "KEYSPACE"} ->
         :ok
+
       %CQL.Result.Void{} ->
         {:error, :already_down}
+
       error ->
         {:error, Exception.message(error)}
     end
@@ -103,8 +107,12 @@ defmodule EctoCassandra.Adapter do
     case exec_and_log(repo, cql, options) do
       %CQL.Result.Rows{rows_count: count, rows: rows} ->
         {count, Enum.map(rows, &process_row(&1, fields, process))}
-      %CQL.Result.Void{} -> :ok
-      error              -> raise error
+
+      %CQL.Result.Void{} ->
+        :ok
+
+      error ->
+        raise error
     end
   end
 
@@ -138,13 +146,13 @@ defmodule EctoCassandra.Adapter do
     options
     |> Keyword.get(:contact_points, [])
     |> List.duplicate(@host_tries)
-    |> List.flatten
+    |> List.flatten()
     |> Stream.map(&Cassandra.Connection.run_query(&1, cql, options))
     |> Stream.reject(&match?(%Cassandra.ConnectionError{}, &1))
     |> Enum.take(1)
     |> case do
       [result] -> result
-      []       -> raise RuntimeError, "connections refused"
+      [] -> raise RuntimeError, "connections refused"
     end
   end
 
@@ -152,15 +160,19 @@ defmodule EctoCassandra.Adapter do
     case exec_and_log(repo, cql, options) do
       %CQL.Result.Void{} ->
         {:ok, []}
-      %CQL.Result.Rows{rows_count: 1, rows: [[false | _]], columns: ["[applied]"|_]} ->
+
+      %CQL.Result.Rows{rows_count: 1, rows: [[false | _]], columns: ["[applied]" | _]} ->
         if on_conflict == :nothing do
           {:ok, []}
         else
           {:error, :stale}
         end
+
       %CQL.Result.Rows{} ->
         {:ok, []}
-      error -> raise error
+
+      error ->
+        raise error
     end
   end
 
@@ -173,11 +185,12 @@ defmodule EctoCassandra.Adapter do
   end
 
   defp log(repo, cql, entry) do
-    %{connection_time: query_time,
+    %{
+      connection_time: query_time,
       decode_time: decode_time,
       pool_time: queue_time,
       result: result,
-      query: query,
+      query: query
     } = entry
 
     repo.__log__(%Ecto.LogEntry{
@@ -186,7 +199,7 @@ defmodule EctoCassandra.Adapter do
       queue_time: queue_time,
       result: log_result(result),
       params: Map.get(query, :values, []),
-      query: String.Chars.to_string(cql),
+      query: String.Chars.to_string(cql)
     })
   end
 

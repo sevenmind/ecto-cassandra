@@ -27,26 +27,16 @@ defmodule EctoCassandra.Mixfile do
       applications: [:logger, :cassandra]
     ]
 
-# <<<<<<< Updated upstream
-  defp deps, do: [
-    {:ecto_sql, "~> 3.0"},
-    {:cassandra, github: "jacktday/elixir-cassandra"},
-    {:excoveralls, "~> 0.6", only: :test},
-    {:ex_doc, "~> 0.18", only: :dev},
+  # <<<<<<< Updated upstream
+  defp deps,
+    do: [
+      {:ecto_sql, "~> 3.0"},
+      {:cassandra, github: "jacktday/elixir-cassandra"},
+      {:excoveralls, "~> 0.6", only: :test},
+      {:ex_doc, "~> 0.18", only: :dev},
       {:lz4, "~> 0.2.2", hex: :lz4_erl, override: true}
       # {:lz4, github: "szktty/erlang-lz4", branch: "develop", override: true}, # TODO check if fixed remove
-  ]
-# =======
-#   defp deps,
-#     do: [
-#       {:ecto, "~> 3.0"},
-#       {:ecto_sql, "~> 3.0"},
-#       {:cassandra, github: "gerbal/elixir-cassandra"},
-#       {:excoveralls, "~> 0.6", only: :test},
-#       {:ex_doc, "~> 0.18", only: :dev},
-#       {:lz4, "~> 0.2.2", hex: :lz4_erl, override: true}
-#     ]
-# >>>>>>> Stashed changes
+    ]
 
   defp package,
     do: [

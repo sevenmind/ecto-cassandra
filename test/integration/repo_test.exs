@@ -11,20 +11,20 @@ defmodule EctoCassandra.Integration.RepoTest do
   end
 
   test "returns already started for started repos" do
-    assert {:error, {:already_started, _}} = TestRepo.start_link
+    assert {:error, {:already_started, _}} = TestRepo.start_link()
   end
 
   test "fetch empty" do
     assert [] == TestRepo.all(Post)
-    assert [] == TestRepo.all(from p in Post)
+    assert [] == TestRepo.all(from(p in Post))
   end
 
   test "fetch with in" do
     TestRepo.insert!(%Post{title: "hello"})
 
-    assert []  = TestRepo.all from p in Post, where: p.title in []
-    assert []  = TestRepo.all from p in Post, where: p.title in ["1", "2", "3"]
-    assert [_] = TestRepo.all from p in Post, where: p.title in ["1", "hello", "3"]
+    assert [] = TestRepo.all(from(p in Post, where: p.title in []))
+    assert [] = TestRepo.all(from(p in Post, where: p.title in ["1", "2", "3"]))
+    assert [_] = TestRepo.all(from(p in Post, where: p.title in ["1", "hello", "3"]))
   end
 
   test "fetch without schema" do
@@ -36,8 +36,7 @@ defmodule EctoCassandra.Integration.RepoTest do
     assert "title1" in titles
     assert "title2" in titles
 
-    assert [_] =
-      TestRepo.all(from(p in "posts", where: p.title == "title1", select: p.title))
+    assert [_] = TestRepo.all(from(p in "posts", where: p.title == "title1", select: p.title))
   end
 
   @tag :invalid_prefix
@@ -54,11 +53,11 @@ defmodule EctoCassandra.Integration.RepoTest do
     assert {:ok, updated} = TestRepo.update(changeset)
     assert updated.updated_at > updated.inserted_at
 
-    deleted_meta = put_in meta.state, :deleted
+    deleted_meta = put_in(meta.state, :deleted)
     assert %Post{} = to_be_deleted = TestRepo.insert!(post)
     assert %Post{__meta__: ^deleted_meta} = TestRepo.delete!(to_be_deleted)
 
-    loaded_meta = put_in meta.state, :loaded
+    loaded_meta = put_in(meta.state, :loaded)
     assert %Post{__meta__: ^loaded_meta} = TestRepo.insert!(post)
 
     post = TestRepo.one(Post)

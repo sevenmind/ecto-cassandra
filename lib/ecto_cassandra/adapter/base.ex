@@ -25,16 +25,34 @@ defmodule EctoCassandra.Adapter.Base do
         [cql, options]
       end
 
-      def insert(repo, %{source: {prefix, source}, schema: schema}, fields, on_conflict, autogenerate, options) do
+      def insert(
+            repo,
+            %{source: {prefix, source}, schema: schema},
+            fields,
+            on_conflict,
+            autogenerate,
+            options
+          ) do
         types = schema.__schema__(:types)
         {_field_names, values} = Enum.unzip(fields)
-        {query_options, options} = Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+
+        {query_options, options} =
+          Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+
         cql = EctoCassandra.insert(prefix, source, fields, autogenerate, types, query_options)
         options = Keyword.put(options, :values, values)
         [repo, cql, options, on_conflict]
       end
 
-      def insert_all(repo, %{source: {prefix, source}, schema: schema}, header, list, on_conflict, [], options) do
+      def insert_all(
+            repo,
+            %{source: {prefix, source}, schema: schema},
+            header,
+            list,
+            on_conflict,
+            [],
+            options
+          ) do
         autogenerate = {auto_column, _} = schema.__schema__(:autogenerate_id)
         header = header -- [auto_column]
         fields = Enum.zip(header, Stream.cycle([nil]))
@@ -47,14 +65,19 @@ defmodule EctoCassandra.Adapter.Base do
         types = schema.__schema__(:types)
         {_field_names, values} = Enum.unzip(fields)
         {filters, filter_values} = Enum.unzip(filters)
-        {query_options, options} = Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+
+        {query_options, options} =
+          Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+
         cql = EctoCassandra.update(prefix, source, fields, filters, types, query_options)
         options = Keyword.put(options, :values, values ++ filter_values)
         [repo, cql, options]
       end
 
       def delete(repo, %{source: {prefix, source}}, filters, options) do
-        {query_options, options} = Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+        {query_options, options} =
+          Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+
         {filters, filter_values} = Enum.unzip(filters)
         cql = EctoCassandra.delete(prefix, source, filters, query_options)
         options = Keyword.put(options, :values, filter_values)
@@ -76,6 +99,7 @@ defmodule EctoCassandra.Adapter.Base do
         case func.() do
           {:error, _} = error ->
             error
+
           value ->
             {:ok, value}
         end
@@ -104,22 +128,21 @@ defmodule EctoCassandra.Adapter.Base do
       defp to_datetime(%NaiveDateTime{} = naive) do
         values =
           naive
-          |> Map.from_struct
+          |> Map.from_struct()
           |> Map.merge(%{std_offset: 0, time_zone: "Etc/UTC", utc_offset: 0, zone_abbr: "UTC"})
 
         {:ok, struct(DateTime, values)}
       end
+
       defp to_datetime(%DateTime{} = datetime), do: {:ok, datetime}
       defp to_datetime(_), do: :error
 
-      defoverridable [
-        autogenerate: 1,
-        delete: 4,
-        execute: 6,
-        insert: 6,
-        insert_all: 7,
-        update: 6,
-      ]
+      defoverridable autogenerate: 1,
+                     delete: 4,
+                     execute: 6,
+                     insert: 6,
+                     insert_all: 7,
+                     update: 6
     end
   end
 end
