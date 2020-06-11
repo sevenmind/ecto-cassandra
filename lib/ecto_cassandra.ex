@@ -366,7 +366,7 @@ defmodule EctoCassandra do
   defp index_name(name) when is_atom(name), do: Atom.to_string(name)
   defp index_name(name), do: name
 
-  defp table_name(%{from: {table, _schema}, prefix: prefix}) do
+  defp table_name(%{from: %{source: {table, _schema}}, prefix: prefix}) do
     table_name(prefix, table)
   end
 
@@ -374,7 +374,7 @@ defmodule EctoCassandra do
     name |> Atom.to_string() |> table_name
   end
 
-  defp table_name(name) do
+  defp table_name(name) when is_binary(name) do
     if Regex.match?(@unquoted_name, name) do
       name
     else
@@ -646,6 +646,7 @@ defmodule EctoCassandra do
     do: "SET<#{column_type(type)}>"
 
   defp column_type(:serial), do: "uuid"
+  defp column_type(:bigserial), do: "uuid"
   defp column_type(:id), do: "uuid"
   defp column_type(:binary_id), do: "timeuuid"
   defp column_type(:uuid), do: "uuid"

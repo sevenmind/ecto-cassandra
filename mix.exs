@@ -3,9 +3,9 @@ defmodule EctoCassandra.Mixfile do
 
   def project,
     do: [
-      app: :ecto_cassandra,
-      version: "1.1.0",
-      elixir: "~> 1.6",
+      app: :ecto_xandra,
+      version: "0.0.1",
+      elixir: "~> 1.10",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -25,13 +25,14 @@ defmodule EctoCassandra.Mixfile do
 
   def application,
     do: [
-      applications: [:logger, :cassandra]
+      applications: [:logger, :xandra]
     ]
 
   defp deps,
     do: [
       {:ecto, "~> 3.0"},
       {:ecto_sql, "~> 3.0"},
+      {:xandra, "~> 0.11"},
       {:cassandra, github: "sevenmind/elixir-cassandra"},
       {:excoveralls, "~> 0.6", only: :test},
       {:ex_doc, "~> 0.18", only: :dev},

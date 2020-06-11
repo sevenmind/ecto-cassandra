@@ -14,23 +14,30 @@ alias EctoCassandra.Integration.TestRepo
 # )
 
 # Code.e
-:ok = Application.ensure_loaded(:ecto_cassandra)
-Application.get_all_env(:ecto_cassandra)
+:ok = Application.ensure_loaded(:ecto_xandra)
+Application.get_all_env(:ecto_xandra)
 
-{:ok, _} = Application.ensure_all_started(:cassandra)
+# {:ok, _} = Application.ensure_all_started(:cassandra)
 {:ok, _} = Application.ensure_all_started(:ecto)
-{:ok, _} = Application.ensure_all_started(:ecto_cassandra)
+{:ok, _} = Application.ensure_all_started(:ecto_sql)
+{:ok, _} = Application.ensure_all_started(:ecto_xandra)
 # IO.inspect(TestRepo.config())
-{:ok, _} = EctoCassandra.Adapter.ensure_all_started(TestRepo, :temporary)
+{:ok, _} = EctoXandra.Adapter.ensure_all_started(TestRepo, :temporary)
 
+
+IO.inspect(TestRepo.config())
 # Load up the repository, start it, and run migrations
-_ = EctoCassandra.Adapter.storage_down(TestRepo.config())
-:ok = EctoCassandra.Adapter.storage_up(TestRepo.config())
+_ = EctoXandra.Adapter.storage_down(TestRepo.config())
+Process.sleep(300)
+:ok = EctoXandra.Adapter.storage_up(TestRepo.config())
+Process.sleep(300)
 
+IO.puts("start test repo")
 {:ok, _pid} = TestRepo.start_link()
+Process.sleep(300)
 
+IO.puts("Run migrations")
 :ok = Ecto.Migrator.up(TestRepo, 0, EctoCassandra.Integration.Migration, log: false)
-
-
+IO.puts("Run the Tests!")
 
 Process.flag(:trap_exit, true)

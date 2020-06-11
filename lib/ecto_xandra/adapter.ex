@@ -1,4 +1,4 @@
-defmodule EctoCassandra.Adapter2 do
+defmodule EctoXandra.Adapter do
   @moduledoc """
   Adapter module for Cassandra.
 
@@ -30,6 +30,8 @@ defmodule EctoCassandra.Adapter2 do
     Logger.info("STORAGE UP")
     options = Keyword.put(options, :on_coordinator, true)
 
+    IO.inspect(options)
+
     command =
       options
       |> Keyword.put(:if_not_exists, true)
@@ -51,6 +53,7 @@ defmodule EctoCassandra.Adapter2 do
   def storage_down(options) do
     Logger.info("STORAGE DOWN")
     options = Keyword.put(options, :on_coordinator, true)
+    IO.inspect(options)
 
     cql =
       options
@@ -170,20 +173,29 @@ defmodule EctoCassandra.Adapter2 do
 
   defp run_query(cql, opts) do
     {:ok, _} = Application.ensure_all_started(:ecto_sql)
-    {:ok, _} = Application.ensure_all_started(:cassandra)
+    {:ok, _} = Application.ensure_all_started(:xandra)
 
-    host = opts |> Keyword.get(:contact_points) |> Enum.random()
+
+
+    host = opts |> Keyword.get(:nodes) |> Enum.random()
 
     opts =
       opts
-      # from postgrex, to remove
-      |> Keyword.drop([:name, :log, :pool, :pool_size])
-      |> Keyword.put(:backoff_type, :stop)
-      |> Keyword.put(:max_restarts, 0)
+      |> Keyword.take([:authentication, :keyspace])
+      |> Keyword.put(:nodes, [host])
+    #   # from postgrex, to remove
+      # |> Keyword.drop([:name, :log, :pool, :pool_size])
+      # |> Keyword.put(:backoff_type, :stop)
+      # |> Keyword.put(:max_restarts, 0)
 
     task =
       Task.Supervisor.async_nolink(Ecto.Adapters.SQL.StorageSupervisor, fn ->
-        Cassandra.Connection.run_query(host, cql, opts)
+        {:ok, conn} =  Xandra.start_link(opts)
+        res = Xandra.execute(conn, cql)
+        GenServer.stop(conn)
+
+        res
+        # Cassandra.Connection.run_query(host, cql, opts)
       end)
 
     timeout = Keyword.get(opts, :timeout, 15_000)
@@ -196,7 +208,7 @@ defmodule EctoCassandra.Adapter2 do
         {:ok, result}
 
       {:exit, {%{__struct__: struct} = error, _}}
-      when struct in [Cassandra.ConnectionError, DBConnection.Error] ->
+      when struct in [DBConnection.Error] ->
         {:error, error}
 
       {:exit, reason} ->
