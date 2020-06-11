@@ -27,13 +27,7 @@ defmodule EctoXandra.Adapter.Connection do
     end)
     |> case do
       {:ok, res} ->
-        response =
-          res
-          |> Map.from_struct()
-          |> Map.put(:rows, res.content)
-          |> Map.put(:num_rows, length(res.content || []))
-
-        {:ok, statement, response}
+        {:ok, statement, xandra_res_transform(res)}
 
       other ->
         other
@@ -42,7 +36,22 @@ defmodule EctoXandra.Adapter.Connection do
     # Xandra.Cluster.prepare_execute
   end
 
+  def execute(conn, prepared, params, options) do
+    Xandra.Cluster.execute(conn, prepared, params, options)
+    |> case do
+      {:ok, %Xandra.Void{}} ->
+        {:ok, prepared, []}
+
+      {:ok, res} ->
+        {:ok, prepared, xandra_res_transform(res)}
+
+      other ->
+        other
+    end
+  end
+
   # defdelegate execute(cluster, query, params, opts), to: Xandra.Cluster
+  defdelegate prepare(cluster, query, params, opts), to: Xandra.Cluster
   # def execute(conn, cached, params, options)
   # def stream(conn, statement, params, options)
   # def to_constraints(exception, options)
@@ -67,8 +76,10 @@ defmodule EctoXandra.Adapter.Connection do
   @impl true
   def execute_ddl(definitions) do
     EctoCassandra.ddl(definitions)
-    |> List.wrap()
   end
+
+  def ddl_logs({:ok, log}), do: ddl_logs(log)
+  def ddl_logs({:ok, _, log}), do: ddl_logs(log)
 
   @impl true
   def ddl_logs(%Xandra.SchemaChange{
@@ -92,17 +103,28 @@ defmodule EctoXandra.Adapter.Connection do
     ]
   end
 
-  def ddl_logs(result) do
-    IO.inspect(result, label: "ddl_logs")
-    # case result do
-    #   error
-    # end
-    %{messages: messages} = result
+  def ddl_logs(%Xandra.Void{}), do: []
+  def ddl_logs(%Xandra.Error{} = err), do: [{:warn, err.message, []}]
 
+  def ddl_logs(%{messages: messages}) do
     for message <- messages do
       %{message: message, severity: severity} = message
 
       {severity, message, []}
     end
   end
+
+  def ddl_logs({:error, message}), do: [{:error, message, []}]
+  def ddl_logs(_), do: []
+
+  defp xandra_res_transform(%Xandra.Void{}), do: %{rows: [], num_rows: 0}
+
+  defp xandra_res_transform(%Xandra.Page{} = res),
+    do:
+      res
+      |> Map.from_struct()
+      |> Map.put(:rows, res.content)
+      |> Map.put(:num_rows, length(res.content || []))
+
+  defp xandra_res_transform(res), do: res
 end

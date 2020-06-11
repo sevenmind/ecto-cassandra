@@ -11,7 +11,9 @@ defmodule EctoXandra.Adapter do
   use Ecto.Adapters.SQL,
     driver: :ecto_xandra
 
-    require Logger
+  alias EctoXandra.Adapter.Connection
+
+  require Logger
   # And provide a custom storage implementation
   @behaviour Ecto.Adapter.Storage
   @behaviour Ecto.Adapter.Structure
@@ -74,7 +76,7 @@ defmodule EctoXandra.Adapter do
 
   @impl Ecto.Adapter.Storage
   def storage_status(opts) do
-    Logger.info("storage_status")
+    Logger.warn("storage_status is not implemented")
     # database =
     #   Keyword.fetch!(opts, :database) || raise ":database is nil in repository configuration"
 
@@ -90,11 +92,6 @@ defmodule EctoXandra.Adapter do
     #   {:ok, %{num_rows: _num_rows}} -> :up
     #   other -> {:error, other}
     # end
-  end
-
-  @impl true
-  def supports_ddl_transaction? do
-    false
   end
 
   # @impl true
@@ -175,27 +172,20 @@ defmodule EctoXandra.Adapter do
     {:ok, _} = Application.ensure_all_started(:ecto_sql)
     {:ok, _} = Application.ensure_all_started(:xandra)
 
-
-
     host = opts |> Keyword.get(:nodes) |> Enum.random()
 
     opts =
       opts
       |> Keyword.take([:authentication, :keyspace])
       |> Keyword.put(:nodes, [host])
-    #   # from postgrex, to remove
-      # |> Keyword.drop([:name, :log, :pool, :pool_size])
-      # |> Keyword.put(:backoff_type, :stop)
-      # |> Keyword.put(:max_restarts, 0)
 
     task =
       Task.Supervisor.async_nolink(Ecto.Adapters.SQL.StorageSupervisor, fn ->
-        {:ok, conn} =  Xandra.start_link(opts)
+        {:ok, conn} = Xandra.start_link(opts)
         res = Xandra.execute(conn, cql)
         GenServer.stop(conn)
 
         res
-        # Cassandra.Connection.run_query(host, cql, opts)
       end)
 
     timeout = Keyword.get(opts, :timeout, 15_000)
@@ -219,26 +209,26 @@ defmodule EctoXandra.Adapter do
     end
   end
 
-
   # --- NOT FROM POSTGREX ---
 
   defp to_naive(%NaiveDateTime{} = datetime), do: {:ok, datetime}
   defp to_naive(%DateTime{} = datetime), do: {:ok, DateTime.to_naive(datetime)}
   defp to_naive(_), do: :error
 
-  ### Ecto.Adapter Callbacks ###
+  ### Ecto.Adapter.Migrations Callbacks ###options
+
+  def execute_ddl(meta, definitions, options) do
+    ddl_logs =
+      definitions
+      |> Connection.execute_ddl()
+      |> List.wrap()
+      |> Enum.map(&Connection.execute(conn, &1, [], options))
+      |> Enum.flat_map(&Connection.ddl_logs/1)
+
+    {:ok, ddl_logs}
+  end
 
   @doc false
-  defmacro __before_compile__(_env) do
-    quote do
-      defmodule CassandraRepo do
-        use Cassandra
-      end
-
-      defdelegate execute(statement, options), to: CassandraRepo
-      defdelegate ddl_logs(results), to: EctoCassandra.Adapter2.Connection
-
-      def __cassandra_repo__, do: CassandraRepo
-    end
-  end
+  @impl true
+  def supports_ddl_transaction?, do: false
 end

@@ -24,7 +24,6 @@ Application.get_all_env(:ecto_xandra)
 # IO.inspect(TestRepo.config())
 {:ok, _} = EctoXandra.Adapter.ensure_all_started(TestRepo, :temporary)
 
-
 IO.inspect(TestRepo.config())
 # Load up the repository, start it, and run migrations
 _ = EctoXandra.Adapter.storage_down(TestRepo.config())
@@ -37,7 +36,7 @@ IO.puts("start test repo")
 Process.sleep(300)
 
 IO.puts("Run migrations")
-:ok = Ecto.Migrator.up(TestRepo, 0, EctoCassandra.Integration.Migration, log: false)
+:ok = Ecto.Migrator.up(TestRepo, 0, EctoCassandra.Integration.Migration)
 IO.puts("Run the Tests!")
 
 Process.flag(:trap_exit, true)
