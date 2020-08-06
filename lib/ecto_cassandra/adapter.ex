@@ -20,7 +20,6 @@ defmodule EctoCassandra.Adapter do
 
   ### Ecto.Adapter callbacks
   def init(config) do
-
     log = Keyword.get(config, :log, :debug)
     telemetry_prefix = Keyword.fetch!(config, :telemetry_prefix)
     telemetry = {config[:repo], log, telemetry_prefix ++ [:query]}
@@ -54,7 +53,6 @@ defmodule EctoCassandra.Adapter do
 
     repo = Map.get(meta, :repo)
 
-
     ddl_logs =
       definitions
       |> EctoCassandra.ddl()
@@ -64,7 +62,6 @@ defmodule EctoCassandra.Adapter do
 
     {:ok, ddl_logs}
   end
-
 
   @doc false
   def supports_ddl_transaction?, do: false
@@ -117,7 +114,7 @@ defmodule EctoCassandra.Adapter do
 
   @doc false
   defmacro __before_compile__(_env) do
-    quote do
+    quote location: :keep do
       defmodule CassandraRepo do
         use Cassandra
       end

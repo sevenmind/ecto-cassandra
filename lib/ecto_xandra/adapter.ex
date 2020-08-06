@@ -159,13 +159,11 @@ defmodule EctoXandra.Adapter do
   #     "--single-transaction",
   #     config[:database]
   #   ]
+  # Ecto
 
-  #   case run_with_cmd("psql", config, args) do
-  #     {_output, 0} -> {:ok, path}
-  #     {output, _} -> {:error, output}
-  #   end
-  # end
-
+  defdelegate all(query), to: Connection
+  defdelegate update_all(query), to: Connection
+  defdelegate delete_all(query), to: Connection
   ## Helpers
 
   defp run_query(cql, opts) do
@@ -217,16 +215,16 @@ defmodule EctoXandra.Adapter do
 
   ### Ecto.Adapter.Migrations Callbacks ###options
 
-  def execute_ddl(meta, definitions, options) do
-    ddl_logs =
-      definitions
-      |> Connection.execute_ddl()
-      |> List.wrap()
-      |> Enum.map(&Connection.execute(conn, &1, [], options))
-      |> Enum.flat_map(&Connection.ddl_logs/1)
+  # def execute_ddl(meta, definitions, options) do
+  #   ddl_logs =
+  #     definitions
+  #     |> Connection.execute_ddl()
+  #     |> List.wrap()
+  #     |> Enum.map(&Connection.execute(@conn, &1, [], options))
+  #     |> Enum.flat_map(&Connection.ddl_logs/1)
 
-    {:ok, ddl_logs}
-  end
+  #   {:ok, ddl_logs}
+  # end
 
   @doc false
   @impl true

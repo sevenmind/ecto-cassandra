@@ -1,16 +1,16 @@
-defmodule EctoCassandra.Assertions do
+defmodule EctoXandra.Assertions do
   import ExUnit.Assertions, only: [assert: 1]
 
   def cql(query, operation \\ :all, counter \\ 0) do
-    {query, _params, _key} =
-      Ecto.Query.Planner.prepare(query, operation, EctoCassandra.Adapter, counter)
+    {query, _params, _key} = Ecto.Query.Planner.plan(query, operation, EctoXandra.Adapter)
 
-    query = Ecto.Query.Planner.normalize(query, operation, EctoCassandra.Adapter, counter)
-    apply(EctoCassandra, operation, [query])
+    {query, _select} = Ecto.Query.Planner.normalize(query, operation, EctoXandra.Adapter, counter)
+
+    apply(EctoXandra.Adapter, operation, [query])
   end
 
   defmacro assert_cql(query, operation \\ :all, cql) do
-    quote do
+    quote location: :keep do
       assert unquote(cql) == cql(unquote(query), unquote(operation))
     end
   end

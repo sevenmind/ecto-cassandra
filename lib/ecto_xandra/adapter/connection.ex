@@ -19,7 +19,7 @@ defmodule EctoXandra.Adapter.Connection do
   end
 
   # SQL.Connection Callbacks
-  def prepare_execute(cluster, name, statement, params, options) do
+  def prepare_execute(cluster, _name, statement, params, options) do
     Xandra.Cluster.run(cluster, fn conn ->
       # "conn" is the pool of connections for a specific node.
       prepared = Xandra.prepare!(conn, statement)
@@ -51,7 +51,7 @@ defmodule EctoXandra.Adapter.Connection do
   end
 
   # defdelegate execute(cluster, query, params, opts), to: Xandra.Cluster
-  defdelegate prepare(cluster, query, params, opts), to: Xandra.Cluster
+  # defdelegate prepare(cluster, query, params, opts), to: Xandra.Cluster
   # def execute(conn, cached, params, options)
   # def stream(conn, statement, params, options)
   # def to_constraints(exception, options)
@@ -64,7 +64,21 @@ defmodule EctoXandra.Adapter.Connection do
     insert(prefix, table, rows, [], [], headers)
   end
 
-  # def update(prefix, table, fields, filters, returning)
+  @impl true
+  def update(prefix, table, fields, filters, returning) do
+    IO.inspect([prefix, table, fields, filters, returning])
+    # types = schema.__schema__(:types)
+    # {_field_names, values} = Enum.unzip(fields)
+    # {filters, filter_values} = Enum.unzip(filters)
+
+    # {query_options, options} =
+    # Enum.split_with(options, fn {key, _} -> key in [:if, :using] end)
+
+    # options = Keyword.put(options, :values, values ++ filter_values)
+    # [repo, cql, options]
+    EctoCassandra.update(prefix, table, fields, filters, [], [])
+  end
+
   # def delete(prefix, table, filters, returning)
   # def table_exists_query(table)
 

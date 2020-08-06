@@ -11,7 +11,7 @@ defmodule EctoCassandra.Adapter2 do
   use Ecto.Adapters.SQL,
     driver: :ecto_xandra
 
-    require Logger
+  require Logger
   # And provide a custom storage implementation
   @behaviour Ecto.Adapter.Storage
   @behaviour Ecto.Adapter.Structure
@@ -207,7 +207,6 @@ defmodule EctoCassandra.Adapter2 do
     end
   end
 
-
   # --- NOT FROM POSTGREX ---
 
   defp to_naive(%NaiveDateTime{} = datetime), do: {:ok, datetime}
@@ -218,7 +217,7 @@ defmodule EctoCassandra.Adapter2 do
 
   @doc false
   defmacro __before_compile__(_env) do
-    quote do
+    quote location: :keep do
       defmodule CassandraRepo do
         use Cassandra
       end

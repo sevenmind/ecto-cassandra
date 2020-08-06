@@ -2,7 +2,7 @@ defmodule EctoCassandra.Adapter.Base do
   @moduledoc false
 
   defmacro __using__(opts \\ []) do
-    quote do
+    quote location: :keep do
       @behaviour Ecto.Adapter
       @behaviour Ecto.Adapter.Migration
       @behaviour Ecto.Adapter.Queryable

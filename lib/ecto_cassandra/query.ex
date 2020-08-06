@@ -29,7 +29,7 @@ defmodule EctoCassandra.Query do
   ]
 
   defmacro __using__([]) do
-    quote do
+    quote location: :keep do
       import Ecto.Query, except: [from: 1, from: 2]
       import EctoCassandra.Query
     end
@@ -39,7 +39,7 @@ defmodule EctoCassandra.Query do
     cassandra_kw = Keyword.take(kw, @cassandra_keys)
     ecto_kw = Keyword.drop(kw, @cassandra_keys)
 
-    quote do
+    quote location: :keep do
       unquote(expr)
       |> Ecto.Query.from(unquote(ecto_kw))
       |> Map.merge(Enum.into(unquote(cassandra_kw), %{}))
@@ -48,52 +48,52 @@ defmodule EctoCassandra.Query do
 
   defmacro token(fields) when is_list(fields) do
     marks = Enum.map_join(fields, ", ", fn _ -> "?" end)
-    quote do: fragment(unquote("token(#{marks})"), unquote_splicing(fields))
+    quote location: :keep, do: fragment(unquote("token(#{marks})"), unquote_splicing(fields))
   end
 
   defmacro token(field) do
-    quote do: fragment("token(?)", unquote(field))
+    quote location: :keep, do: fragment("token(?)", unquote(field))
   end
 
   defmacro cast(field, type) when type in @types do
     fragment = "cast(? as #{Atom.to_string(type)})"
-    quote do: fragment(unquote(fragment), unquote(field))
+    quote location: :keep, do: fragment(unquote(fragment), unquote(field))
   end
 
   defmacro uuid do
-    quote do: fragment("uuid()")
+    quote location: :keep, do: fragment("uuid()")
   end
 
   defmacro now do
-    quote do: fragment("now()")
+    quote location: :keep, do: fragment("now()")
   end
 
   defmacro min_timeuuid(time) do
-    quote do: fragment("minTimeuuid(?)", unquote(time))
+    quote location: :keep, do: fragment("minTimeuuid(?)", unquote(time))
   end
 
   defmacro max_timeuuid(time) do
-    quote do: fragment("maxTimeuuid(?)", unquote(time))
+    quote location: :keep, do: fragment("maxTimeuuid(?)", unquote(time))
   end
 
   defmacro to_date(time) do
-    quote do: fragment("toDate(?)", unquote(time))
+    quote location: :keep, do: fragment("toDate(?)", unquote(time))
   end
 
   defmacro to_timestamp(time) do
-    quote do: fragment("toTimestamp(?)", unquote(time))
+    quote location: :keep, do: fragment("toTimestamp(?)", unquote(time))
   end
 
   defmacro to_unix_timestamp(time) do
-    quote do: fragment("toUnixTimestamp(?)", unquote(time))
+    quote location: :keep, do: fragment("toUnixTimestamp(?)", unquote(time))
   end
 
   defmacro as_blob(field, type) when type in @types do
     fragment = "#{Atom.to_string(type)}AsBlob(?)"
-    quote do: fragment(unquote(fragment), unquote(field))
+    quote location: :keep, do: fragment(unquote(fragment), unquote(field))
   end
 
   defmacro contains(field, value) do
-    quote do: fragment("? CONTAINS ?", unquote(field), unquote(value))
+    quote location: :keep, do: fragment("? CONTAINS ?", unquote(field), unquote(value))
   end
 end

@@ -21,6 +21,7 @@ defmodule EctoCassandra do
   ### API ###
 
   def all(query) do
+    IO.inspect(query, structs: false)
     IO.iodata_to_binary([
       select(query),
       from(query),

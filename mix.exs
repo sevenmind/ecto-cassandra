@@ -30,13 +30,13 @@ defmodule EctoCassandra.Mixfile do
 
   defp deps,
     do: [
-      {:ecto, "~> 3.0"},
-      {:ecto_sql, "~> 3.0"},
-      {:xandra, "~> 0.11"},
+      {:ecto, "~> 3.4"},
+      {:ecto_sql, "~> 3.4"},
+      {:xandra, "~> 0.13"},
       {:cassandra, github: "sevenmind/elixir-cassandra"},
-      {:excoveralls, "~> 0.6", only: :test},
-      {:ex_doc, "~> 0.18", only: :dev},
-      {:lz4, "~> 0.2.2", hex: :lz4_erl, override: true}
+      {:excoveralls, "~> 0.13", only: :test},
+      {:ex_doc, "~> 0.22", only: :dev},
+      {:lz4, "~> 0.2", hex: :lz4_erl, override: true}
     ]
 
   defp package,
