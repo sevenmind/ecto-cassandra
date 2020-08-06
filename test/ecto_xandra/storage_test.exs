@@ -1,4 +1,4 @@
-defmodule EctoCassandra.StorageTest do
+defmodule EctoXandra.StorageTest do
   use ExUnit.Case, async: true
 
   setup do

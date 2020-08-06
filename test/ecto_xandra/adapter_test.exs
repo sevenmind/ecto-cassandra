@@ -1,7 +1,7 @@
-defmodule EctoCassandra.AdapterTest do
+defmodule EctoXandra.AdapterTest do
   use ExUnit.Case, async: true
 
-  import EctoCassandra.Assertions
+  import EctoXandra.Assertions
 
   use EctoCassandra.Query
 
@@ -10,14 +10,14 @@ defmodule EctoCassandra.AdapterTest do
 
     @primary_key {:id, :binary_id, autogenerate: true}
     schema "users" do
-      field :cat_id, Ecto.UUID
-      field :name, :string
-      field :age,  :integer
-      field :is_student, :boolean
-      field :score, :float
-      field :data, :binary
-      field :hobbes, {:array, :string}
-      field :joined_at, Ecto.DateTime
+      field(:cat_id, Ecto.UUID)
+      field(:name, :string)
+      field(:age, :integer)
+      field(:is_student, :boolean)
+      field(:score, :float)
+      field(:data, :binary)
+      field(:hobbes, {:array, :string})
+      field(:joined_at, :utc_datetime)
     end
   end
 
@@ -33,7 +33,6 @@ defmodule EctoCassandra.AdapterTest do
   test "select" do
     query = select(User, [u], {u.name, u.age})
     assert cql(query) == "SELECT name, age FROM users"
-
 
     query = select(User, [u], struct(u, [:name, :age]))
     assert cql(query) == "SELECT name, age FROM users"
@@ -72,11 +71,11 @@ defmodule EctoCassandra.AdapterTest do
 
   test "or" do
     assert_raise Ecto.QueryError, ~r/Cassandra does not support OR operator/, fn ->
-      cql(from u in User, where: u.name == "Jack", or_where: u.age > 10, select: u.name)
+      cql(from(u in User, where: u.name == "Jack", or_where: u.age > 10, select: u.name))
     end
 
     assert_raise Ecto.QueryError, ~r/Cassandra does not support OR operator/, fn ->
-      cql(from u in User, where: u.name == "Jack" or u.age > 10, select: u.name)
+      cql(from(u in User, where: u.name == "Jack" or u.age > 10, select: u.name))
     end
   end
 
@@ -92,7 +91,7 @@ defmodule EctoCassandra.AdapterTest do
     |> assert_cql("SELECT id, name FROM users ORDER BY id, joined_at")
 
     User
-    |> order_by([u], [asc: u.id, desc: u.joined_at])
+    |> order_by([u], asc: u.id, desc: u.joined_at)
     |> select([u], [u.id, u.name])
     |> assert_cql("SELECT id, name FROM users ORDER BY id, joined_at DESC")
 
@@ -181,7 +180,7 @@ defmodule EctoCassandra.AdapterTest do
     |> where([u], u.age > 25)
     |> select([:id])
     |> assert_cql("SELECT id FROM users WHERE age > 25")
-   end
+  end
 
   test "fragments" do
     User
@@ -227,7 +226,7 @@ defmodule EctoCassandra.AdapterTest do
 
   test "nested expressions" do
     from(u in User, [])
-    |> where([u], u.age > 0 and (u.age > (-123)) and true)
+    |> where([u], u.age > 0 and u.age > -123 and true)
     |> select([u], u.age)
     |> assert_cql("SELECT age FROM users WHERE age > 0 AND age > -123 AND TRUE")
   end
@@ -253,84 +252,137 @@ defmodule EctoCassandra.AdapterTest do
     query =
       from(u in User,
         where: fragment("? = \'query\\?\'", u.joined_at),
-        select: [:id])
+        select: [:id]
+      )
 
     assert cql(query) == "SELECT id FROM users WHERE joined_at = 'query?'"
   end
 
   test "update_all operations" do
-    query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904", update: [set: [name: "Jesse"]])
-    assert cql(query, :update_all) ==
-      "UPDATE users SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+    query =
+      from(u in User,
+        where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: "Jesse"]]
+      )
 
-    query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904" , update: [set: [name: "John"], inc: [age: -3]])
     assert cql(query, :update_all) ==
-      "UPDATE users SET name = 'John', age = age + -3 WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+             "UPDATE users SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
 
-    query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904" , update: [set: [name: "John"], push: [hobbes: "hiking"]])
-    assert cql(query, :update_all) ==
-      "UPDATE users SET name = 'John', hobbes = hobbes + ['hiking'] WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+    query =
+      from(u in User,
+        where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: "John"], inc: [age: -3]]
+      )
 
-    query = from(u in User, where: u.id == ^"14c755a0-0bb4-4a26-8724-e7f9d2cd1904" , update: [set: [name: ^"Jack"], pull: [hobbes: ^"hiking"]])
     assert cql(query, :update_all) ==
-      "UPDATE users SET name = ?, hobbes = hobbes - [?] WHERE id = ?"
+             "UPDATE users SET name = 'John', age = age + -3 WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+
+    query =
+      from(u in User,
+        where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: "John"], push: [hobbes: "hiking"]]
+      )
+
+    assert cql(query, :update_all) ==
+             "UPDATE users SET name = 'John', hobbes = hobbes + ['hiking'] WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+
+    query =
+      from(u in User,
+        where: u.id == ^"14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: ^"Jack"], pull: [hobbes: ^"hiking"]]
+      )
+
+    assert cql(query, :update_all) ==
+             "UPDATE users SET name = ?, hobbes = hobbes - [?] WHERE id = ?"
   end
 
   test "update_all using options" do
-    query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904", update: [set: [name: "Jesse"]], using: [ttl: 1000])
-    assert cql(query, :update_all) ==
-      "UPDATE users USING TTL 1000 SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+    query =
+      from(u in User,
+        where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: "Jesse"]],
+        using: [ttl: 1000]
+      )
 
-    query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904", update: [set: [name: "Jesse"]], using: [timestamp: 100000])
     assert cql(query, :update_all) ==
-      "UPDATE users USING TIMESTAMP 100000 SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+             "UPDATE users USING TTL 1000 SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
 
-    query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904", update: [set: [name: "Jesse"]], using: [ttl: 1000, timestamp: 100000])
+    query =
+      from(u in User,
+        where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: "Jesse"]],
+        using: [timestamp: 100_000]
+      )
+
     assert cql(query, :update_all) ==
-      "UPDATE users USING TTL 1000 AND TIMESTAMP 100000 SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+             "UPDATE users USING TIMESTAMP 100000 SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+
+    query =
+      from(u in User,
+        where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904",
+        update: [set: [name: "Jesse"]],
+        using: [ttl: 1000, timestamp: 100_000]
+      )
+
+    assert cql(query, :update_all) ==
+             "UPDATE users USING TTL 1000 AND TIMESTAMP 100000 SET name = 'Jesse' WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
   end
 
   test "delete_all" do
     assert cql(from(User), :delete_all) == "TRUNCATE users"
 
     query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904")
-    assert cql(query, :delete_all) == "DELETE FROM users WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
+
+    assert cql(query, :delete_all) ==
+             "DELETE FROM users WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904"
 
     query = from(u in User, where: u.age >= 27)
     assert cql(query, :delete_all) == "DELETE FROM users WHERE age >= 27"
 
     query = from(u in User, where: u.id == "14c755a0-0bb4-4a26-8724-e7f9d2cd1904", if: :exists)
+
     assert cql(query, :delete_all) ==
-      "DELETE FROM users WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904 IF EXISTS"
+             "DELETE FROM users WHERE id = 14c755a0-0bb4-4a26-8724-e7f9d2cd1904 IF EXISTS"
   end
 
   test "insert" do
-    assert EctoCassandra.insert(nil, "users", [name: "John", age: 27], [:id], [id: :binary_id], []) ==
-      "INSERT INTO users (id, name, age) VALUES (now(), ?, ?)"
+    assert EctoCassandra.insert(
+             nil,
+             "users",
+             [name: "John", age: 27],
+             [:id],
+             [id: :binary_id],
+             []
+           ) ==
+             "INSERT INTO users (id, name, age) VALUES (now(), ?, ?)"
 
     assert EctoCassandra.insert("prefix", "users", [name: "Jack", age: 28], [:id], [id: :id], []) ==
-      "INSERT INTO prefix.users (id, name, age) VALUES (uuid(), ?, ?)"
+             "INSERT INTO prefix.users (id, name, age) VALUES (uuid(), ?, ?)"
   end
 
   test "update" do
-    query = EctoCassandra.update(
-      nil,
-      "users",
-      [name: "John", age: 27],
-      [:id],
-      [],
-      []
-    )
+    query =
+      EctoCassandra.update(
+        nil,
+        "users",
+        [name: "John", age: 27],
+        [:id],
+        [],
+        []
+      )
+
     assert query == "UPDATE users SET name = ?, age = ? WHERE id = ?"
 
-    query = EctoCassandra.update(
-      "keyspace",
-      "users",
-      [name: "John", age: 27],
-      [:id],
-      [],
-      []
-    )
+    query =
+      EctoCassandra.update(
+        "keyspace",
+        "users",
+        [name: "John", age: 27],
+        [:id],
+        [],
+        []
+      )
+
     assert query == "UPDATE keyspace.users SET name = ?, age = ? WHERE id = ?"
   end
 
@@ -338,7 +390,7 @@ defmodule EctoCassandra.AdapterTest do
     query = EctoCassandra.delete(nil, "users", [:name, :age], [])
     assert query == "DELETE FROM users WHERE name = ? AND age = ?"
 
-    query = EctoCassandra.delete(nil, "users", [:name, :age], [if: :exists])
+    query = EctoCassandra.delete(nil, "users", [:name, :age], if: :exists)
     assert query == "DELETE FROM users WHERE name = ? AND age = ? IF EXISTS"
 
     query = EctoCassandra.delete("pre", "users", [:name, :age], [])
@@ -394,21 +446,27 @@ defmodule EctoCassandra.AdapterTest do
       |> where([u], u.id >= min_timeuuid("2013-01-01 00:05+0000"))
       |> where([u], u.id <= max_timeuuid("2016-01-01 00:05+0000"))
       |> select([u], u.name)
-      |> assert_cql("SELECT name FROM users WHERE id >= minTimeuuid('2013-01-01 00:05+0000') AND id <= maxTimeuuid('2016-01-01 00:05+0000')")
+      |> assert_cql(
+        "SELECT name FROM users WHERE id >= minTimeuuid('2013-01-01 00:05+0000') AND id <= maxTimeuuid('2016-01-01 00:05+0000')"
+      )
     end
 
     test "to date" do
       User
       |> where([u], u.id == to_date("a280d70c-6374-40af-be03-e8e3cd60652e"))
       |> select([u], u.name)
-      |> assert_cql("SELECT name FROM users WHERE id = toDate(a280d70c-6374-40af-be03-e8e3cd60652e)")
+      |> assert_cql(
+        "SELECT name FROM users WHERE id = toDate(a280d70c-6374-40af-be03-e8e3cd60652e)"
+      )
     end
 
     test "to timestamp" do
       User
       |> where([u], u.joined_at >= to_timestamp("2011-02-03T04:05:00.000+0000"))
       |> select([u], u.name)
-      |> assert_cql("SELECT name FROM users WHERE joined_at >= toTimestamp('2011-02-03T04:05:00.000+0000')")
+      |> assert_cql(
+        "SELECT name FROM users WHERE joined_at >= toTimestamp('2011-02-03T04:05:00.000+0000')"
+      )
     end
 
     test "to unix timestamp" do
@@ -433,10 +491,12 @@ defmodule EctoCassandra.AdapterTest do
     test "not" do
       query =
         User
-        |> where([u], not(u.cat_id))
+        |> where([u], not u.cat_id)
         |> select([u], u.id)
 
-      assert_raise Ecto.QueryError, ~r/Cassandra does not support NOT relation/, fn -> cql(query) end
+      assert_raise Ecto.QueryError, ~r/Cassandra does not support NOT relation/, fn ->
+        cql(query)
+      end
     end
 
     test "support locking" do
@@ -455,7 +515,9 @@ defmodule EctoCassandra.AdapterTest do
         |> where([u], is_nil(u.age))
         |> select([u], u.id)
 
-      assert_raise Ecto.QueryError, ~r/Cassandra does not support IS NULL relation/, fn -> cql(query) end
+      assert_raise Ecto.QueryError, ~r/Cassandra does not support IS NULL relation/, fn ->
+        cql(query)
+      end
     end
   end
 end

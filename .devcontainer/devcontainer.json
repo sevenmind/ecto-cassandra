@@ -1,0 +1,21 @@
+{
+  "name": "VSCode Remote",
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
+  "extensions": [
+	"samuel-pordeus.elixir-test",
+	"sadesyllas.elixir-module-autoname",
+	"sleistner.vscode-fileutils",
+	"jakebecker.elixir-ls",
+	"stkb.rewrap",
+	"github.vscode-pull-request-github-insiders"
+],
+  "service": "app",
+  "workspaceFolder": "/opt/app",
+  "shutdownAction": "stopCompose",
+  "settings": {
+    "terminal.integrated.shell.linux": "/usr/bin/zsh"
+  },
+  "remoteUser": "vscode"
+}

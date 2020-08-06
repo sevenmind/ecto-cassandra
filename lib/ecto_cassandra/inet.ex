@@ -13,7 +13,7 @@ defmodule EctoCassandra.INet do
   def cast(ip) when is_list(ip) do
     case :inet_parse.address(ip) do
       {:ok, ip} -> {:ok, ip}
-      _         -> :error
+      _ -> :error
     end
   end
 

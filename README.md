@@ -81,3 +81,16 @@ defmodule Sample.App do
 end
 ```
 
+
+
+### Ecto V3 Compatbility
+
+Ecto Mix tasks
+ - [x] `mix ecto.drop`
+ - [ ] `mix ecto.create`
+ - [ ] `mix ecto.migrate`
+
+Callbacks To Implement 
+ - [ ] `Ecto.Adapters.SQL.Connection` in `EctoCassandra.Adapter2.Connection`
+ - [ ] `Ecto.Adapter.Storage` in `EctoCassandra.Adapter2`
+ - [ ] `Ecto.Adapter.Structure` in `EctoCassandra.Adapter2`

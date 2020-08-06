@@ -7,24 +7,60 @@ defmodule EctoCassandra.Adapter do
 
   use EctoCassandra.Adapter.Base
 
-  @behaviour Ecto.Adapter
-  @behaviour Ecto.Adapter.Migration
+  # @behaviour Ecto.Adapter
+  # @behaviour Ecto.Adapter.Migration
   @behaviour Ecto.Adapter.Storage
+  # @behaviour Ecto.Adapter.Queryable
+  # @behaviour Ecto.Adapter.Schema
 
   @host_tries 3
+  # @conn Cassandra.Session
+  @pool_opts [:timeout, :pool, :pool_size, :migration_lock] ++
+               [:queue_target, :queue_interval, :ownership_timeout]
+
+  ### Ecto.Adapter callbacks
+  def init(config) do
+    log = Keyword.get(config, :log, :debug)
+    telemetry_prefix = Keyword.fetch!(config, :telemetry_prefix)
+    telemetry = {config[:repo], log, telemetry_prefix ++ [:query]}
+
+    config = adapter_config(config)
+    opts = Keyword.take(config, @pool_opts)
+    meta = %{telemetry: telemetry, opts: opts}
+
+    repo = Keyword.get(config, :repo)
+
+    {:ok, child_spec(repo, config), meta}
+  end
 
   ### Ecto.Adapter.Migration Callbacks ###
 
   @doc false
-  def execute_ddl(repo, definitions, options) do
-    options = Keyword.put(options, :on_coordinator, true)
-    cql = EctoCassandra.ddl(definitions)
 
-    case exec_and_log(repo, cql, options) do
-      %CQL.Result.SchemaChange{} -> :ok
-      %CQL.Result.Void{}         -> :ok
-      error                      -> raise error
-    end
+  def execute_ddl(meta, definitions, options) do
+    options = Keyword.put(options, :on_coordinator, true)
+    # cql = EctoCassandra.ddl(definitions)
+
+    # IO.inspect([repo])
+    # IO.inspect([definitions])
+    # IO.inspect([options])
+
+    # case exec_and_log(repo, cql, options) do
+    #   %CQL.Result.SchemaChange{} -> :ok
+    #   %CQL.Result.Void{} -> :ok
+    #   error -> raise error
+    # end
+
+    repo = Map.get(meta, :repo)
+
+    ddl_logs =
+      definitions
+      |> EctoCassandra.ddl()
+      |> List.wrap()
+      |> Enum.map(&repo.execute(&1, options))
+      |> Enum.flat_map(&repo.ddl_logs/1)
+
+    {:ok, ddl_logs}
   end
 
   @doc false
@@ -39,13 +75,15 @@ defmodule EctoCassandra.Adapter do
     cql =
       options
       |> Keyword.put(:if_not_exists, true)
-      |> EctoCassandra.create_keyspace
+      |> EctoCassandra.create_keyspace()
 
     case run_query(cql, options) do
       %CQL.Result.SchemaChange{change_type: "CREATED", target: "KEYSPACE"} ->
         :ok
+
       %CQL.Result.Void{} ->
         {:error, :already_up}
+
       error ->
         {:error, Exception.message(error)}
     end
@@ -58,13 +96,15 @@ defmodule EctoCassandra.Adapter do
     cql =
       options
       |> Keyword.put(:if_exists, true)
-      |> EctoCassandra.drop_keyspace
+      |> EctoCassandra.drop_keyspace()
 
     case run_query(cql, options) do
       %CQL.Result.SchemaChange{change_type: "DROPPED", target: "KEYSPACE"} ->
         :ok
+
       %CQL.Result.Void{} ->
         {:error, :already_down}
+
       error ->
         {:error, Exception.message(error)}
     end
@@ -74,14 +114,17 @@ defmodule EctoCassandra.Adapter do
 
   @doc false
   defmacro __before_compile__(_env) do
-    quote do
+    quote location: :keep do
       defmodule CassandraRepo do
         use Cassandra
       end
 
       defdelegate execute(statement, options), to: CassandraRepo
+      # defdelegate ddl_logs(results), to: EctoCassandra.Adapter
 
       def __cassandra_repo__, do: CassandraRepo
+
+      # def ddl_logs
     end
   end
 
@@ -103,8 +146,12 @@ defmodule EctoCassandra.Adapter do
     case exec_and_log(repo, cql, options) do
       %CQL.Result.Rows{rows_count: count, rows: rows} ->
         {count, Enum.map(rows, &process_row(&1, fields, process))}
-      %CQL.Result.Void{} -> :ok
-      error              -> raise error
+
+      %CQL.Result.Void{} ->
+        :ok
+
+      error ->
+        raise error
     end
   end
 
@@ -138,13 +185,14 @@ defmodule EctoCassandra.Adapter do
     options
     |> Keyword.get(:contact_points, [])
     |> List.duplicate(@host_tries)
-    |> List.flatten
+    |> List.flatten()
     |> Stream.map(&Cassandra.Connection.run_query(&1, cql, options))
     |> Stream.reject(&match?(%Cassandra.ConnectionError{}, &1))
+    |> Enum.to_list()
     |> Enum.take(1)
     |> case do
       [result] -> result
-      []       -> raise RuntimeError, "connections refused"
+      [] -> raise RuntimeError, "connections refused"
     end
   end
 
@@ -152,15 +200,19 @@ defmodule EctoCassandra.Adapter do
     case exec_and_log(repo, cql, options) do
       %CQL.Result.Void{} ->
         {:ok, []}
-      %CQL.Result.Rows{rows_count: 1, rows: [[false | _]], columns: ["[applied]"|_]} ->
+
+      %CQL.Result.Rows{rows_count: 1, rows: [[false | _]], columns: ["[applied]" | _]} ->
         if on_conflict == :nothing do
           {:ok, []}
         else
           {:error, :stale}
         end
+
       %CQL.Result.Rows{} ->
         {:ok, []}
-      error -> raise error
+
+      error ->
+        raise error
     end
   end
 
@@ -173,11 +225,12 @@ defmodule EctoCassandra.Adapter do
   end
 
   defp log(repo, cql, entry) do
-    %{connection_time: query_time,
+    %{
+      connection_time: query_time,
       decode_time: decode_time,
       pool_time: queue_time,
       result: result,
-      query: query,
+      query: query
     } = entry
 
     repo.__log__(%Ecto.LogEntry{
@@ -186,18 +239,46 @@ defmodule EctoCassandra.Adapter do
       queue_time: queue_time,
       result: log_result(result),
       params: Map.get(query, :values, []),
-      query: String.Chars.to_string(cql),
-      ansi_color: cql_color(cql),
+      query: String.Chars.to_string(cql)
     })
   end
 
   defp log_result({:ok, _query, res}), do: {:ok, res}
   defp log_result(other), do: other
 
-  defp cql_color("SELECT" <> _), do: :cyan
-  defp cql_color("INSERT" <> _), do: :green
-  defp cql_color("UPDATE" <> _), do: :yellow
-  defp cql_color("DELETE" <> _), do: :red
-  defp cql_color("TRUNC" <> _), do: :red
-  defp cql_color(_), do: nil
+  defp adapter_config(config) do
+    if Keyword.has_key?(config, :pool_timeout) do
+      message = """
+      :pool_timeout option no longer has an effect and has been replaced with an improved queuing system.
+      See \"Queue config\" in DBConnection.start_link/2 documentation for more information.
+      """
+
+      IO.warn(message)
+    end
+
+    config
+    |> Keyword.delete(:name)
+    |> Keyword.update(:pool, DBConnection.ConnectionPool, &normalize_pool/1)
+  end
+
+  defp normalize_pool(pool) do
+    if Code.ensure_loaded?(pool) && function_exported?(pool, :unboxed_run, 2) do
+      DBConnection.Ownership
+    else
+      pool
+    end
+  end
+
+  def ddl_logs(result) do
+    # case result do
+    #   error
+    # end
+    %{messages: messages} = result
+
+    for message <- messages do
+      %{message: message, severity: severity} = message
+
+      {severity, message, []}
+    end
+  end
 end

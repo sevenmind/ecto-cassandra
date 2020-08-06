@@ -1,4 +1,4 @@
-defmodule EctoCassandra.MigrationTest do
+defmodule EctoXandra.MigrationTest do
   use ExUnit.Case, async: true
 
   import Ecto.Migration
