@@ -1,0 +1,32 @@
+version: "3.4"
+
+services:
+  app:
+    build:
+      context: .
+    environment:
+      MIX_ENV: test
+      CASSANDRA_CONTACT_POINTS: cassandra
+    depends_on:
+      - cassandra
+    command: sleep infinity
+
+    # command: bash 
+    volumes:
+      - ..:/opt/app
+    ports:
+      - "8080:8080"
+
+
+  cassandra:
+    image: cassandra
+    restart: always
+    environment:
+      JVM_OPTS: -Xms256M -Xmx256M
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
