@@ -42,8 +42,8 @@ defmodule EctoCassandra.Adapter do
     # cql = EctoCassandra.ddl(definitions)
 
     # IO.inspect([repo])
-    IO.inspect([definitions])
-    IO.inspect([options])
+    # IO.inspect([definitions])
+    # IO.inspect([options])
 
     # case exec_and_log(repo, cql, options) do
     #   %CQL.Result.SchemaChange{} -> :ok

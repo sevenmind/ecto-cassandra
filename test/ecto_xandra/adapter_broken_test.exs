@@ -1,4 +1,6 @@
 defmodule EctoXandra.AdapterBrokenTest do
+  # These tests are copied directly from the Ecto SQL Ecto.Adapaters.PostgresTest
+
   use ExUnit.Case, async: true
 
   import Ecto.Query
@@ -1869,7 +1871,7 @@ defmodule EctoXandra.AdapterBrokenTest do
        [
          {:add, :title, :string, [default: "Untitled", size: 100, null: false]},
          {:add, :author_id, %Reference{table: :author}, []},
-         {:add, :category_id, %Reference{table: :categories, validate: false}, []},
+         {:add, :category_id, %Reference{table: :categories}, []},
          {:add_if_not_exists, :subtitle, :string, [size: 100, null: false]},
          {:add_if_not_exists, :editor_id, %Reference{table: :editor}, []},
          {:modify, :price, :numeric, [precision: 8, scale: 2, null: true]},
@@ -2224,7 +2226,7 @@ defmodule EctoXandra.AdapterBrokenTest do
   end
 
   defp make_result(level) do
-    %Postgrex.Result{
+    %{
       messages: [
         %{
           message: ~s(table "foo" exists, skipping),

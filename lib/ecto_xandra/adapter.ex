@@ -32,7 +32,7 @@ defmodule EctoXandra.Adapter do
     Logger.info("STORAGE UP")
     options = Keyword.put(options, :on_coordinator, true)
 
-    IO.inspect(options)
+    # IO.inspect(options)
 
     command =
       options
@@ -55,7 +55,7 @@ defmodule EctoXandra.Adapter do
   def storage_down(options) do
     Logger.info("STORAGE DOWN")
     options = Keyword.put(options, :on_coordinator, true)
-    IO.inspect(options)
+    # IO.inspect(options)
 
     cql =
       options

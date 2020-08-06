@@ -27,17 +27,17 @@ defmodule EctoCassandra.Adapter2.Connection do
   @impl true
   def query(conn, query, params, opts) do
     Logger.info("QUERY")
-    IO.inspect(conn, label: "conn")
+    # IO.inspect(conn, label: "conn")
 
-    IO.inspect(Process.info(conn, [:initial_call, :binary, :links, :dictionary]),
-      label: "conn info"
-    )
+    # IO.inspect(Process.info(conn, [:initial_call, :binary, :links, :dictionary]),
+    #   label: "conn info"
+    # )
 
-    IO.inspect(query, label: "query")
-    IO.inspect(params, label: "params")
-    IO.inspect(opts, label: "opts")
-    # IO.inspect(Process.info(conn))
-    IO.inspect(Supervisor.which_children(conn))
+    # IO.inspect(query, label: "query")
+    # IO.inspect(params, label: "params")
+    # IO.inspect(opts, label: "opts")
+    # # IO.inspect(Process.info(conn))
+    # IO.inspect(Supervisor.which_children(conn))
 
     # Pull Repo name from
     repo =
@@ -74,7 +74,7 @@ defmodule EctoCassandra.Adapter2.Connection do
 
   @impl true
   def ddl_logs(result) do
-    IO.inspect(result)
+    # IO.inspect(result)
     # case result do
     #   error
     # end

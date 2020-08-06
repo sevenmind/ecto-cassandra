@@ -7,7 +7,7 @@ defmodule EctoXandra.Adapter.Connection do
   def child_spec(config) do
     import Supervisor.Spec
     # repo = Keyword.get(config, :repo)
-    IO.inspect(config)
+    # IO.inspect(config)
 
     keyspace = config[:keyspace]
 
@@ -66,7 +66,7 @@ defmodule EctoXandra.Adapter.Connection do
 
   @impl true
   def update(prefix, table, fields, filters, returning) do
-    IO.inspect([prefix, table, fields, filters, returning])
+    # IO.inspect([prefix, table, fields, filters, returning])
     # types = schema.__schema__(:types)
     # {_field_names, values} = Enum.unzip(fields)
     # {filters, filter_values} = Enum.unzip(filters)

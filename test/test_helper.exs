@@ -24,7 +24,7 @@ Application.get_all_env(:ecto_xandra)
 # IO.inspect(TestRepo.config())
 {:ok, _} = EctoXandra.Adapter.ensure_all_started(TestRepo, :temporary)
 
-IO.inspect(TestRepo.config())
+# IO.inspect(TestRepo.config())
 # Load up the repository, start it, and run migrations
 _ = EctoXandra.Adapter.storage_down(TestRepo.config())
 Process.sleep(300)
